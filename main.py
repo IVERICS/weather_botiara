@@ -2,6 +2,7 @@ import asyncio
 import logging
 import sys
 import requests
+import hendlers
 from os import getenv
 
 from aiogram import Bot, Dispatcher, html, F, types
@@ -60,10 +61,11 @@ async def weather_handler(message: Message) -> None:
     }
     response = requests.get(url, params=params)
     weather = response.json()
+    direction = weather.get('wind').get('deg')
     await message.answer(f"Ваше местоположение: {weather.get('name')}, {weather.get('sys').get('country')}\n"
                          f"Температура за бортом: {weather.get('main').get('temp')}C°\n"
                          f"Скорость ветра: {weather.get('wind').get('speed')}м/c\n"
-                         f"Направление ветра: {response.json().get('wind').get('deg')}°\n"
+                         f"Направление ветра: {hendlers.get_direction(int(direction))}({direction}°)\n"
                          f"{weather.get('weather')[0].get('description').capitalize()}")
 
 
