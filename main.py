@@ -3,17 +3,22 @@ import logging
 import sys
 import requests
 import hendlers
+import json
 from os import getenv
-
 from aiogram import Bot, Dispatcher, html, F, types
+from aiogram.methods import SendSticker
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 
 
+with open('config.json', 'r') as file:
+    data = json.load(file)
+
+
 # Bot token can be obtained via https://t.me/BotFather
-TOKEN = "7322887237:AAG5we_XpSZSz3Kw0jxhbF7yHKEV7Dh3iWM"
+TOKEN = data['token']
 
 # All handlers should be attached to the Router (or Dispatcher)
 
@@ -62,11 +67,15 @@ async def weather_handler(message: Message) -> None:
     response = requests.get(url, params=params)
     weather = response.json()
     direction = weather.get('wind').get('deg')
-    await message.answer(f"Ваше местоположение: {weather.get('name')}, {weather.get('sys').get('country')}\n"
-                         f"Температура за бортом: {weather.get('main').get('temp')}C°\n"
-                         f"Скорость ветра: {weather.get('wind').get('speed')}м/c\n"
-                         f"Направление ветра: {hendlers.get_direction(int(direction))}({direction}°)\n"
-                         f"{weather.get('weather')[0].get('description').capitalize()}")
+    print(weather.get('weather')[0].get('id'))
+    await message.answer(f"{hendlers.get_emoji(weather.get('weather')[0].get('id'))}")
+    await message.answer(f"🧭Ваше местоположение: {weather.get('name')}, {weather.get('sys').get('country')}\n"
+                         f"🌡Температура за бортом: {weather.get('main').get('temp')}C°\n"
+                         f"💨Скорость ветра: {weather.get('wind').get('speed')}м/c\n"
+                         f"🪁Направление ветра: {hendlers.get_direction(int(direction))}({direction}°)\n"
+                         f"📎Описание: {weather.get('weather')[0].get('description').capitalize()}\n"
+                         f"💧Влажность: {weather.get('main').get('humidity')}%\n"
+                         f"💉Давление: {int(weather.get('main').get('pressure'))*0.75}мм рт.ст.")
 
 
 @dp.message(Command("markup"))
@@ -92,6 +101,7 @@ async def echo_handler(message: Message) -> None:
 async def main() -> None:
     # Initialize Bot instance with default bot properties which will be passed to all API calls
     bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+    await bot.delete_webhook()
 
     # And the run events dispatching
     await dp.start_polling(bot)

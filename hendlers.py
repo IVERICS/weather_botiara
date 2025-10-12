@@ -15,3 +15,20 @@ def get_direction(deg):
         return 'восток'
     if 30 < deg < 60:
         return 'ceверо-восток'
+
+
+def get_emoji(emoji_id):
+    emoji = ''
+    if 200 <= emoji_id <= 232:
+        emoji = '🌩'
+    if 300 <= emoji_id <= 531:
+        emoji = '🌧'
+    if 600 <= emoji_id <= 622:
+        emoji = '🌨'
+    if 701 <= emoji_id <= 781:
+        emoji = '😶‍🌫'
+    if emoji_id == 800:
+        emoji = '☀️'
+    if 801 <= emoji_id <= 804:
+        emoji = '☁️'
+    return emoji
