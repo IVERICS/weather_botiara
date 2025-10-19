@@ -4,7 +4,7 @@ from threading import Lock
 USERS_TABLE = '''
         CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY,
-        user_id TEXT, 
+        user_id INTEGER UNIQUE NOT NULL, 
         lat TEXT,
         lon TEXT,
         full_name TEXT
@@ -37,7 +37,6 @@ class Database(metaclass=Singleton):
         self.cursor = self.conn.cursor()
 
     def close(self):
-        self.conn.commit()
         self.conn.close()
 
     def create_tables(self):
