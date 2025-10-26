@@ -10,6 +10,7 @@ class User:
         self.lat = lat
         self.lon = lon
         self.id = None
+        self.notification_time = None
 
     def safe_to_db(self):
         """
@@ -92,3 +93,28 @@ class User:
             return False
         finally:
             db.close()
+
+    def set_notification(self, notification_time=None):
+        self.notification_time = notification_time
+        return self.update_in_db()
+
+    @classmethod
+    def get_user_with_notification(cls, user_id=None):
+        db = Database()
+        db.connect()
+        try:
+            if user_id is None:
+                query = '''
+                    SELECT * FROM users
+                    WHERE notification_time IS NOT NULL
+                    ORDER BY notification_time
+                '''
+                params = ()
+            else:
+                query = '''
+                            SELECT * FROM users
+                            WHERE notification_time IS NOT NULL AND user_id = ?
+                            ORDER BY notification_time
+                        '''
+                params = (user_id,)
+            db.cursor.execute(query, params)

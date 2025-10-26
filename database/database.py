@@ -2,13 +2,15 @@ import sqlite3
 from threading import Lock
 
 USERS_TABLE = '''
-        CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY,
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER UNIQUE NOT NULL, 
         lat TEXT,
         lon TEXT,
+        notification_time TIMESTAMP,
         full_name TEXT
-        );'''
+    );
+'''
 
 tables = {
     'users': USERS_TABLE,
@@ -33,19 +35,28 @@ class Database(metaclass=Singleton):
         self.cursor = None
 
     def connect(self):
-        self.conn = sqlite3.connect('./database.db')
-        self.cursor = self.conn.cursor()
+        if self.conn is None:
+            self.conn = sqlite3.connect('./database/database.db')
+            self.cursor = self.conn.cursor()
 
     def close(self):
         self.conn.close()
+        self.cursor = None
+        self.conn = None
 
     def create_tables(self):
         self.connect()
-        names = []
-        for name in self.cursor.execute('SELECT name FROM sqlite_master WHERE type="table"').fetchall():
-            names.append(name[0])
-        for table_name, query in tables.items():
-            if table_name not in names:
-                self.cursor.execute(query)
-        self.close()
+        try:
+            self.cursor.execute('SELECT name FROM sqlite_master WHERE type="table"')
+            existing_tables = [table[0] for table in self.cursor.fetchall()]
+            for table_name, query in tables.items():
+                if table_name not in existing_tables:
+                    print(f'📦 Создаем таблицу: {table_name}')
+                    self.cursor.execute(query)
+            self.conn.commit()
+            print('✅ Все таблицы готовы')
+        except Exception as e:
+            print(f'❌ Ошибка создания таблиц: {e}')
+        finally:
+            self.close()
 
