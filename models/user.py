@@ -1,5 +1,6 @@
 import sqlite3
 from database.database import Database
+from datetime import datetime
 
 
 class User:
@@ -99,7 +100,7 @@ class User:
         return self.update_in_db()
 
     @classmethod
-    def get_user_with_notification(cls, user_id=None):
+    def get_users_with_notification(cls, user_id=None):
         db = Database()
         db.connect()
         try:
@@ -118,3 +119,53 @@ class User:
                         '''
                 params = (user_id,)
             db.cursor.execute(query, params)
+            rows = db.cursor.fetchall()
+            return [cls._create_from_row(row) for row in rows if row]
+        except Exception as e:
+            print(f"❌ Ошибка получения пользователя с уведомлением:{e}")
+            return []
+        finally:
+            db.close()
+
+    @classmethod
+    def _create_from_row(cls, row):
+        '''Создание объекта user из строки БД'''
+        try:
+            if hasattr(row,'_fields'):
+                row_dict = {key: row[key] for key in row.keys()}
+            else:
+                columns = ['id', 'user_id', 'lat', 'lon', 'notification_time', 'full_name']
+                row_dict = dict(zip(columns, row))
+            user = cls.__new__(cls)
+            user.id = row_dict['id']
+            user.user_id = row_dict['user_id']
+            user.lat = row_dict.get('lat', '')
+            user.lon = row_dict.get('lon', '')
+            user.notification_time = cls._parse_datetime(row_dict.get('notification_time'))
+            user.full_name = row_dict.get('full_name', '')
+            return user
+        except Exception as e:
+            print(f"❌ Ошибка cоздания пользователя: {e}")
+            return None
+
+    @staticmethod
+    def _parse_datetime(date_str):
+        '''Парсинг строки даты из БД'''
+        if not date_str:
+            return None
+        try:
+            formats = [
+                '%Y-%m-%d %H:%M:%S',
+                '%Y-%m-%dT%H:%M:%S',
+                '%Y-%m-%d %H:%M:%S.%f',
+                '%Y-%m-%dT%H:%M:%S.%f'
+            ]
+            for fmt in formats:
+                try:
+                    return datetime.strptime(date_str, fmt)
+                except ValueError:
+                    continue
+            return datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+        except (ValueError, AttributeError) as e:
+            print(f"❌ Ошибка парсинга даты '{date_str}': {e}")
+            return None

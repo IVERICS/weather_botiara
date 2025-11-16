@@ -5,6 +5,7 @@ import requests
 import hendlers
 import json
 from os import getenv
+from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, html, F, types
 from aiogram.methods import SendSticker
 from aiogram.client.default import DefaultBotProperties
@@ -13,12 +14,12 @@ from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 
 
-with open('config.json', 'r') as file:
-    data = json.load(file)
+load_dotenv()
 
 
 # Bot token can be obtained via https://t.me/BotFather
-TOKEN = data['token']
+TOKEN = getenv('BOT_TOKEN')
+KEY = getenv('WEATHER_KEY')
 
 # All handlers should be attached to the Router (or Dispatcher)
 
@@ -60,7 +61,7 @@ async def weather_handler(message: Message) -> None:
     params = {
         "lat": message.location.latitude,
         "lon": message.location.longitude,
-        "appid": "f9e52698bc0786930a5a7fc385762ba5",
+        "appid": KEY,
         "lang": "ru",
         "units": "metric"
     }
