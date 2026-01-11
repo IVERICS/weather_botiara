@@ -1,4 +1,4 @@
-from weather import Weather
+from utils.weather import Weather
 from datetime import datetime
 from aiogram import Bot
 from models.user import User
@@ -10,11 +10,13 @@ async def check_notification(bot: Bot):
     '''
     try:
         users_with_notification = User.get_users_with_notification()
+        current_time = datetime.now()
         for user in users_with_notification:
             try:
                 if not user.notification_time:
                     continue
-                if datetime.now() >= user.notification_time:
+                if (current_time.hour == user.notification_time.hour and
+                    current_time.minute == user.notification_time.minute):
                     await send_notification(bot, user)
             except Exception as e:
                 print(f'❌ Ошибка обработки уведомления для пользователя {user.id}: {e}')

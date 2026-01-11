@@ -38,7 +38,7 @@ class Weather:
         self.location = f'{weather_dict.get("name")}, {weather_dict.get("sys").get("country")}'
         self.temp = weather_dict.get('main').get('temp')
         self.wind_speed = weather_dict.get('wind').get('speed')
-        self.wind_direction = hendlers.get_direction(int(weather_dict.get('wind').get('direction')))
+        self.wind_direction = hendlers.get_direction(int(weather_dict.get('wind').get('deg')))
         self.description = weather_dict.get('weather')[0].get('description').capitalize()
         self.humidity = weather_dict.get('main').get('humidity')
         self.pressure = int(weather_dict.get('main').get('pressure')) * 0.75

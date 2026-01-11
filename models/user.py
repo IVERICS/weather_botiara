@@ -4,14 +4,41 @@ from datetime import datetime
 
 
 class User:
-    def __init__(self, telegram_id, full_name, lat, lon):
+    def __init__(self, telegram_id, full_name, lat, lon, id=None, notification_time=None):
         self.users = []
         self.telegram_id = telegram_id
         self.full_name = full_name
         self.lat = lat
         self.lon = lon
-        self.id = None
-        self.notification_time = None
+        self.id = id
+        self.notification_time = notification_time
+
+
+    @classmethod
+    def get_by_telegram_id(cls, user_id):
+        '''Получение пользователя по телеграмм айди'''
+        db = Database()
+        try:
+            db.connect()
+            query = ' SELECT * FROM users WHERE user_id = ?'
+            db.cursor.execute(query, (user_id,))
+            row = db.cursor.fetchone()
+            if row:
+                return cls(
+                    id=row[0],
+                    telegram_id=row[1],
+                    lat=row[2],
+                    lon=row[3],
+                    notification_time=row[4],
+                    full_name=row[5]
+                )
+            return None
+        except sqlite3.Error as e:
+            print(f'Ошибка получения пользователя: {e}')
+            return None
+        finally:
+            db.close()
+
 
     def safe_to_db(self):
         """

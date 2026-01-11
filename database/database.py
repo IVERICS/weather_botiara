@@ -40,7 +40,8 @@ class Database(metaclass=Singleton):
             self.cursor = self.conn.cursor()
 
     def close(self):
-        self.conn.close()
+        if self.conn:
+            self.conn.close()
         self.cursor = None
         self.conn = None
 
