@@ -37,7 +37,7 @@ def get_time_selection_keyboard():
         keyboard_row = []
         for time in row:
             if time == 'Назад':
-                keyboard_row.append(InlineKeyboardButton(text=time, callback_data='back_to_notification'))
+                keyboard_row.append(InlineKeyboardButton(text=time, callback_data='back_to_notifications'))
             else:
                 keyboard_row.append(InlineKeyboardButton(text=time, callback_data=f'set_time_{time}'))
         keyboard.append(keyboard_row)

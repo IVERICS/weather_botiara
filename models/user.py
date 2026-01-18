@@ -80,10 +80,10 @@ class User:
         try:
             query = """
                     UPDATE users
-                    SET user_id = ?, full_name = ?, lat = ?, lon = ?
+                    SET user_id = ?, full_name = ?, lat = ?, lon = ?, notification_time = ?
                     WHERE id = ?
                     """
-            params = (self.telegram_id, self.full_name, self.lat, self.lon, self.id)
+            params = (self.telegram_id, self.full_name, self.lat, self.lon, self.notification_time, self.id)
             db.cursor.execute(query,params)
             db.conn.commit()
             if db.cursor.rowcount > 0:
@@ -140,9 +140,9 @@ class User:
                 params = ()
             else:
                 query = '''
-                            SELECT * FROM users
-                            WHERE notification_time IS NOT NULL AND user_id = ?
-                            ORDER BY notification_time
+                    SELECT * FROM users
+                    WHERE notification_time IS NOT NULL AND user_id = ?
+                    ORDER BY notification_time
                         '''
                 params = (user_id,)
             db.cursor.execute(query, params)
@@ -161,11 +161,11 @@ class User:
             if hasattr(row,'_fields'):
                 row_dict = {key: row[key] for key in row.keys()}
             else:
-                columns = ['id', 'user_id', 'lat', 'lon', 'notification_time', 'full_name']
+                columns = ['id', 'telegram_id', 'lat', 'lon', 'notification_time', 'full_name']
                 row_dict = dict(zip(columns, row))
             user = cls.__new__(cls)
             user.id = row_dict['id']
-            user.user_id = row_dict['user_id']
+            user.telegram_id = row_dict['telegram_id']
             user.lat = row_dict.get('lat', '')
             user.lon = row_dict.get('lon', '')
             user.notification_time = cls._parse_datetime(row_dict.get('notification_time'))

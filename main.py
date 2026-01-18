@@ -50,15 +50,14 @@ async def command_start_handler(message: Message) -> None:
 
 @dp.message(F.text == "Погода сейчас")
 async def current_weather_handler(message: Message) -> None:
-    user = User.get_users_with_notification(user_id=message.from_user.id)
-    if not user or not user[0].lat:
+    user = User.get_by_telegram_id(user_id=message.from_user.id)
+    if not user or not user.lat:
         await message.answer(
             'Сначала дай локацию чтобы я мог показать тебе ппогоду',
             reply_markup=get_main_keyboard()
         )
         return
-    user = user[0]
-    await send_weather_message(message, user.lon, user.lat)
+    await send_weather_message(message, user.lat, user.lon)
 
 
 @dp.message(F.text == "Мои уведомления")
@@ -109,33 +108,32 @@ async def location_handler(message: Message) -> None:
 
 @dp.callback_query(F.data == 'add_notification')
 async def add_notification_handler(callback: CallbackQuery):
-    users = User.get_users_with_notification(user_id=callback.from_user.id)
-    if not users or not users[0].lat:
+    user = User.get_by_telegram_id(user_id=callback.from_user.id)
+    if not user or not user.lat:
         await callback.message.edit_text(
             'Сначала отправте свою лолкацию чтобы настроить уведомления',
             reply_markup=get_notifications_keyboard()
         )
         return None
     await callback.message.edit_text(
-        'Выберете время для уведомления'
+        'Выберете время для уведомления\n'
         'Я буду присылать погоду каждый день в выбранное время',
         reply_markup=get_time_selection_keyboard()
     )
 
 
-@dp.callback_query(F.data.startwith('set_time_'))
+@dp.callback_query(F.data.startswith('set_time_'))
 async def set_time_handler(callback: CallbackQuery):
     time_str = callback.data.replace('set_time_', '')
-    users = User.get_users_with_notification(user_id=callback.from_user.id)
-    if users:
-        user = users[0]
+    user = User.get_by_telegram_id(user_id=callback.from_user.id)
+    if user:
         from datetime import datetime
         try:
             hours, minutes = map(int, time_str.split(':'))
             notification_time = datetime.now().replace(
-                hours=hours,
-                minutes=minutes,
-                seconds=0,
+                hour=hours,
+                minute=minutes,
+                second=0,
                 microsecond=0
             )
             if user.set_notification(notification_time=notification_time):
@@ -166,7 +164,7 @@ async def show_notifications_handler(callback: CallbackQuery):
         await callback.message.edit_text(
             f'Ваше текущее уведомление:\n\n'
             f'Время: {time_str}\n'
-            f'Локация: {user.lat: .4f}, {user.lon: .4f}',
+            f'Локация: {float(user.lat): .4f}, {float(user.lon): .4f}',
             reply_markup=get_notifications_keyboard()
         )
     else:
@@ -225,8 +223,8 @@ async def back_to_notifications_handler(callback: CallbackQuery):
 @dp.callback_query(F.data == 'back_to_main')
 async def back_to_main_handler(callback: CallbackQuery):
     '''Назад к главному меню'''
-    await callback.message.edit_text(
-        'Главное меню:',
+    await callback.message.answer(
+        'Главное меню↓',
         reply_markup=get_main_keyboard()
     )
 
@@ -255,14 +253,15 @@ async def send_weather_message(message: Message, lat: float, lon: float):
         weather = Weather(lat, lon)
         await weather.get_weather()
         message_text = (
-            f'{weather.emoji} <b>Погода сейчас:</b>\n\n'
-            f'<b>Местоположение:</b>{weather.location}\n'
-            f'<b>Температура:</b>{weather.temp}°C\n'
-            f'<b>Ветер:</b>{weather.wind_speed} м/с, {weather.wind_direction}\n'
-            f'<b>Описание:</b>{weather.description}\n'
-            f'<b>Влажность:</b>{weather.humidity}%\n'
-            f'<b>Давление:</b>{weather.pressure:.1f} мм рт. ст.'
+            f'<b>Погода сейчас:</b>\n\n'
+            f'<b>🧭Местоположение:</b>{weather.location}\n'
+            f'<b>🌡Температура:</b>{weather.temp}°C\n'
+            f'<b>💨Ветер:</b>{weather.wind_speed} м/с, 🪁{weather.wind_direction}\n'
+            f'<b>📎Описание:</b>{weather.description}\n'
+            f'<b>💧Влажность:</b>{weather.humidity}%\n'
+            f'<b>💉Давление:</b>{weather.pressure:.1f} мм рт. ст.'
         )
+        await message.answer(text=weather.emoji)
         await message.answer(message_text, parse_mode=ParseMode.HTML)
     except Exception as e:
         print(f'❌ Ошибка получения погоды : {e}')

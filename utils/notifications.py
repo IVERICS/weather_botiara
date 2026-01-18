@@ -32,8 +32,8 @@ async def send_notification(bot, user):
         message_text = (
             f"🧭Ваше местоположение: {weather.location}\n"
             f"🌡Температура за бортом: {weather.temp}C°\n"
-            f"💨Скорость ветра: {weather.wind_speed}м/c\n"
-            f"🪁Направление ветра: {weather.wind_direction})\n"
+            f"💨Скорость ветра: {weather.wind_speed} м/c\n"
+            f"🪁Направление ветра: {weather.wind_direction}\n"
             f"📎Описание: {weather.description}\n"
             f"💧Влажность: {weather.humidity}%\n"
             f"💉Давление: {weather.pressure}мм рт.ст."
