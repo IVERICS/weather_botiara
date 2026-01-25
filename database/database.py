@@ -7,13 +7,22 @@ USERS_TABLE = '''
         user_id INTEGER UNIQUE NOT NULL, 
         lat TEXT,
         lon TEXT,
-        notification_time TIMESTAMP,
         full_name TEXT
+    );
+'''
+
+NOTIFICATIONS_TABLE = '''
+    CREATE TABLE IF NOT EXISTS notifications (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        notification_time TIMESTAMP,
+        description TEXT
     );
 '''
 
 tables = {
     'users': USERS_TABLE,
+    'notifications': NOTIFICATIONS_TABLE
 }
 
 
