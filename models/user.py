@@ -1,17 +1,24 @@
 import sqlite3
 from database.database import Database
 from datetime import datetime
+from models.notification import Notification
 
 
 class User:
-    def __init__(self, telegram_id, full_name, lat, lon, id=None, notification_time=None):
+    def __init__(self, telegram_id, full_name, lat, lon, id=None):
         self.users = []
         self.telegram_id = telegram_id
         self.full_name = full_name
         self.lat = lat
         self.lon = lon
         self.id = id
-        self.notification_time = notification_time
+        self._notification = None
+
+    @property
+    def notification_time(self):
+        if self._notification is None:
+            self._notification = Notification.delete_by_user_id(self.id)
+        return self._notification.notification_time if self._notification else None
 
 
     @classmethod
@@ -19,26 +26,21 @@ class User:
         '''Получение пользователя по телеграмм айди'''
         db = Database()
         try:
-            db.connect()
-            query = ' SELECT * FROM users WHERE user_id = ?'
-            db.cursor.execute(query, (user_id,))
-            row = db.cursor.fetchone()
-            if row:
-                return cls(
-                    id=row[0],
-                    telegram_id=row[1],
-                    lat=row[2],
-                    lon=row[3],
-                    notification_time=row[4],
-                    full_name=row[5]
+            result = db.fetch_one('SELECT * FROM users WHERE user_id = ?', (user_id,))
+            if result:
+                user = cls(
+                    id=result[0],
+                    telegram_id=result[1],
+                    lat=result[2],
+                    lon=result[3],
+                    full_name=result[5]
                 )
+                user._notification = Notification.get_by_user_id(user.id)
+                return user
             return None
         except sqlite3.Error as e:
-            print(f'Ошибка получения пользователя: {e}')
+            print(f'❌ Ошибка получения пользователя: {e}')
             return None
-        finally:
-            db.close()
-
 
     def safe_to_db(self):
         """
@@ -46,7 +48,6 @@ class User:
         Возвращает True при успехе, False при ошибке
         """
         db = Database()
-        db.connect()
         try:
             if self.id is None:
                 query = """
@@ -54,18 +55,16 @@ class User:
                         VALUES (?, ?, ?, ?)
                         """
                 params = (self.telegram_id, self.full_name, self.lat, self.lon)
-                db.cursor.execute(query, params)
-                self.id = db.cursor.lastrowid
-                db.conn.commit()
-                print(f"✅ Пользователь создан с ID: {self.id}")
-                return True
+                if db.execute_query(query, params):
+                    self.id = db.cursor.lastrowid
+                    print(f"✅ Пользователь создан с ID: {self.id}")
+                    return True
+                return False
             else:
                 return self.update_in_db()
         except sqlite3.Error as e:
             print(f"❌ Ошибка сохранения пользователя: {e}")
             return False
-        finally:
-            db.close()
 
     def update_in_db(self):
         """
@@ -76,27 +75,17 @@ class User:
             print("⚠️ Пользователь не имеет ID, используйте save_to_db() для создания")
             return False
         db = Database()
-        db.connect()
         try:
             query = """
                     UPDATE users
-                    SET user_id = ?, full_name = ?, lat = ?, lon = ?, notification_time = ?
+                    SET full_name = ?, lat = ?, lon = ?
                     WHERE id = ?
                     """
-            params = (self.telegram_id, self.full_name, self.lat, self.lon, self.notification_time, self.id)
-            db.cursor.execute(query,params)
-            db.conn.commit()
-            if db.cursor.rowcount > 0:
-                print(f"✅ Пользователь с ID: {self.id} обновлен")
-                return True
-            else:
-                print(f"⚠️ Пользователь с ID: {self.id} не найден")
-                return False
+            params = (self.full_name, self.lat, self.lon, self.id)
+            db.execute_query(query,params)
         except sqlite3.Error as e:
             print(f"❌ Ошибка обновления пользователя: {e}")
             return False
-        finally:
-            db.close()
 
     def delite_from_db(self):
         """
@@ -106,7 +95,6 @@ class User:
             print("⚠️ Пользователь не имеет ID")
             return False
         db = Database()
-        db.connect()
         try:
             db.cursor.execute("DELETE FROM users WHERE id = ?", (self.id,))
             db.conn.commit()
@@ -119,12 +107,12 @@ class User:
         except sqlite3.Error as e:
             print(f"❌ Ошибка удаления пользователя: {e}")
             return False
-        finally:
-            db.close()
 
     def set_notification(self, notification_time=None):
-        self.notification_time = notification_time
-        return self.update_in_db()
+        try:
+            if notification_time is None:
+                if self._notification:
+                    success = self._notification.delete_from_db()
 
     @classmethod
     def get_users_with_notification(cls, user_id=None):
@@ -151,8 +139,6 @@ class User:
         except Exception as e:
             print(f"❌ Ошибка получения пользователя с уведомлением:{e}")
             return []
-        finally:
-            db.close()
 
     @classmethod
     def _create_from_row(cls, row):

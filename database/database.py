@@ -15,8 +15,9 @@ NOTIFICATIONS_TABLE = '''
     CREATE TABLE IF NOT EXISTS notifications (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
-        notification_time TIMESTAMP,
+        notification_time TEXT NOT NULL,
         description TEXT
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
     );
 '''
 
@@ -70,3 +71,32 @@ class Database(metaclass=Singleton):
         finally:
             self.close()
 
+    def execute_query(self, query, params=()):
+        self.connect()
+        try:
+            self.cursor.execute(query, params)
+            self.conn.commit()
+            return True
+        except Exception as e:
+            print(f'❌ Ошибка выполнения запроса: {e}')
+            return False
+
+    def fetch_one(self, query, params=()):
+        self.connect()
+        try:
+            self.cursor.execute(query, params)
+            result = self.cursor.fetchone()
+            return dict(result) if result else None
+        except Exception as e:
+            print(f'❌ Ошибка получения данных: {e}')
+            return None
+
+    def fetch_all(self, query, params=()):
+        self.connect()
+        try:
+            self.cursor.execute(query, params)
+            results = self.cursor.fetchall()
+            return [dict(row) for row in results]
+        except Exception as e:
+            print(f'❌ Ошибка получения данных: {e}')
+            return []
