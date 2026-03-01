@@ -5,27 +5,30 @@ from datetime import datetime
 
 class Notification:
     def __init__(self, user_id, notification_time, description=None, id=None):
-        self.user_id = user_id,
-        self.notification_time = notification_time,
+        self.user_id = user_id
+        self.notification_time = notification_time
         self.description = description
         self.id = id
 
     def save_to_db(self):
         db = Database()
-        db.connect()
         try:
+            print('notification 16')
             if self.id is None:
+                print('notification 18')
                 query = '''
                     INSERT INTO notifications (user_id, notification_time, description)
                     VALUES (?, ?, ?)
                 '''
                 params = (self.user_id, self.notification_time, self.description)
                 if db.execute_query(query, params):
+                    print('notification 25')
                     self.id = db.cursor.lastrowid
                     print(f'Уведомление создано с id: {self.id}')
                     return True
                 return False
             else:
+                print('notification 31')
                 query = '''
                     UPDATE notifications
                     SET notification_time = ?, description = ?
@@ -36,23 +39,21 @@ class Notification:
 
         except sqlite3.Error as e:
             print(f'❌ Ошибка сохранения уведомления: {e}')
-        finally:
-            db.close()
 
     @classmethod
     def get_by_user_id(cls, user_id):
-        db = Database
+        db = Database()
         try:
-            result = db.fetch_one(
+            result = db.fetch_all(
                 'SELECT * FROM notifications WHERE user_id = ?',
                 (user_id,)
             )
             if result:
                 return cls(
-                    id=result.get('id'),
-                    user_id=result.get('user_id'),
-                    notification_time=cls._str_to_datetime(result.get('notification_time')),
-                    description=result.get('description', None)
+                    id=result[0],
+                    user_id=result[1],
+                    notification_time=cls._str_to_datetime(result[2]),
+                    description=result[3]
                 )
             return None
         except Exception as e:
@@ -72,8 +73,8 @@ class Notification:
                     u.lon
                 FROM notifications n
                 JOIN users u ON n.user_id = u.id
-                WHERE n.notifications_time IS NOT NULL
-                ORDER BY n.notifications_time
+                WHERE n.notification_time IS NOT NULL
+                ORDER BY n.notification_time
             '''
             results = db.fetch_all(query)
             return results

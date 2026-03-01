@@ -29,7 +29,7 @@ def get_time_selection_keyboard():
     times = [
         ['07:00', '08:00', '09:00'],
         ['10:00', '12:00', '15:00'],
-        ['18:00', '20:00', '22:00'],
+        ['18:00', '20:00', 'Настроить'],
         ['Назад']
     ]
     keyboard = []
@@ -38,6 +38,8 @@ def get_time_selection_keyboard():
         for time in row:
             if time == 'Назад':
                 keyboard_row.append(InlineKeyboardButton(text=time, callback_data='back_to_notifications'))
+            elif time == 'Настроить':
+                keyboard_row.append(InlineKeyboardButton(text=time, callback_data='custom_time'))
             else:
                 keyboard_row.append(InlineKeyboardButton(text=time, callback_data=f'set_time_{time}'))
         keyboard.append(keyboard_row)

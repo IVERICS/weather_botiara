@@ -30,6 +30,7 @@ async def send_notification(bot, user):
         weather = Weather(user.lat, user.lon)
         await weather.get_weather()
         message_text = (
+            f"🌤Ежедневное уведомление о погоде:\n\n"
             f"🧭Ваше местоположение: {weather.location}\n"
             f"🌡Температура за бортом: {weather.temp}C°\n"
             f"💨Скорость ветра: {weather.wind_speed} м/c\n"

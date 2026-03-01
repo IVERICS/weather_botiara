@@ -33,7 +33,7 @@ class User:
                     telegram_id=result[1],
                     lat=result[2],
                     lon=result[3],
-                    full_name=result[5]
+                    full_name=result[4]
                 )
                 user._notification = Notification.get_by_user_id(user.id)
                 return user
@@ -113,72 +113,42 @@ class User:
             if notification_time is None:
                 if self._notification:
                     success = self._notification.delete_from_db()
+                    if success:
+                        self._notification = None
+                    return success
+                return True
+            else:
+                if self._notification is None:
+                    self._notification = Notification(user_id=self.id, notification_time=notification_time)
+                else:
+                    self._notification.notification_time = notification_time
+                return self._notification.save_to_db()
+        except Exception as e:
+            print(f'❌ Ошибка установки уведомления: {e}')
+            return False
 
     @classmethod
     def get_users_with_notification(cls, user_id=None):
-        db = Database()
-        db.connect()
         try:
-            if user_id is None:
-                query = '''
-                    SELECT * FROM users
-                    WHERE notification_time IS NOT NULL
-                    ORDER BY notification_time
-                '''
-                params = ()
-            else:
-                query = '''
-                    SELECT * FROM users
-                    WHERE notification_time IS NOT NULL AND user_id = ?
-                    ORDER BY notification_time
-                        '''
-                params = (user_id,)
-            db.cursor.execute(query, params)
-            rows = db.cursor.fetchall()
-            return [cls._create_from_row(row) for row in rows if row]
-        except Exception as e:
-            print(f"❌ Ошибка получения пользователя с уведомлением:{e}")
-            return []
-
-    @classmethod
-    def _create_from_row(cls, row):
-        '''Создание объекта user из строки БД'''
-        try:
-            if hasattr(row,'_fields'):
-                row_dict = {key: row[key] for key in row.keys()}
-            else:
-                columns = ['id', 'telegram_id', 'lat', 'lon', 'notification_time', 'full_name']
-                row_dict = dict(zip(columns, row))
-            user = cls.__new__(cls)
-            user.id = row_dict['id']
-            user.telegram_id = row_dict['telegram_id']
-            user.lat = row_dict.get('lat', '')
-            user.lon = row_dict.get('lon', '')
-            user.notification_time = cls._parse_datetime(row_dict.get('notification_time'))
-            user.full_name = row_dict.get('full_name', '')
-            return user
-        except Exception as e:
-            print(f"❌ Ошибка cоздания пользователя: {e}")
-            return None
-
-    @staticmethod
-    def _parse_datetime(date_str):
-        '''Парсинг строки даты из БД'''
-        if not date_str:
-            return None
-        try:
-            formats = [
-                '%Y-%m-%d %H:%M:%S',
-                '%Y-%m-%dT%H:%M:%S',
-                '%Y-%m-%d %H:%M:%S.%f',
-                '%Y-%m-%dT%H:%M:%S.%f'
-            ]
-            for fmt in formats:
-                try:
-                    return datetime.strptime(date_str, fmt)
-                except ValueError:
+            notifications_data = Notification.get_all_with_notifications()
+            users = []
+            for data in notifications_data:
+                if user_id and str(user_id) != str(data[4]):
                     continue
-            return datetime.fromisoformat(date_str.replace('Z', '+00:00'))
-        except (ValueError, AttributeError) as e:
-            print(f"❌ Ошибка парсинга даты '{date_str}': {e}")
-            return None
+                user = cls(
+                    id=data[1],
+                    telegram_id=data[4],
+                    full_name=data[5],
+                    lat=data[6],
+                    lon=data[7],
+                )
+                user._notification = Notification(
+                    id=data[0],
+                    user_id=data[1],
+                    notification_time=Notification._str_to_datetime(data[2])
+                )
+                users.append(user)
+            return users
+        except Exception as e:
+            print(f"❌ Ошибка получения пользователей с уведомлением:{e}")
+            return []

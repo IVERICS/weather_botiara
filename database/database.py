@@ -16,7 +16,7 @@ NOTIFICATIONS_TABLE = '''
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
         notification_time TEXT NOT NULL,
-        description TEXT
+        description TEXT,
         FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
     );
 '''
@@ -86,7 +86,7 @@ class Database(metaclass=Singleton):
         try:
             self.cursor.execute(query, params)
             result = self.cursor.fetchone()
-            return dict(result) if result else None
+            return result if result else None
         except Exception as e:
             print(f'❌ Ошибка получения данных: {e}')
             return None
@@ -96,7 +96,7 @@ class Database(metaclass=Singleton):
         try:
             self.cursor.execute(query, params)
             results = self.cursor.fetchall()
-            return [dict(row) for row in results]
+            return [row for row in results]
         except Exception as e:
             print(f'❌ Ошибка получения данных: {e}')
             return []

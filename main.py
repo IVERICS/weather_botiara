@@ -168,7 +168,7 @@ async def show_notifications_handler(callback: CallbackQuery):
             reply_markup=get_notifications_keyboard()
         )
     else:
-        await callback.message.edit_text(
+        await callback.message.answer(
             '❌ У вас нет установленных уведомлений',
             reply_markup=get_notifications_keyboard()
         )
@@ -189,7 +189,6 @@ async def confirm_delete_handler(callback: CallbackQuery):
     users = User.get_users_with_notification(user_id=callback.from_user.id)
     if users:
         user = users[0]
-        user.notification_time = None
         if user.set_notification():
             await callback.message.edit_text(
                 'Все уведомления удалены',
@@ -218,6 +217,9 @@ async def back_to_notifications_handler(callback: CallbackQuery):
         'Управление уведомлениями',
         reply_markup=get_notifications_keyboard()
     )
+
+@dp.callback_query(F.data == 'custom_time')
+async def custom_data_handler(callback: CallbackQuery)
 
 
 @dp.callback_query(F.data == 'back_to_main')
